@@ -29,15 +29,51 @@ export const PROMPTS = [
 ];
 
 export const WEIGHT_DATA = [
-  { week: 6, kg: 58 }, { week: 10, kg: 59 }, { week: 14, kg: 60.5 },
-  { week: 18, kg: 62 }, { week: 22, kg: 64 }, { week: 24, kg: 65 },
+  { week: 6, kg: 58, bp: "110/70", note: "Baseline prenatal checkup" },
+  { week: 10, kg: 59, bp: "112/72", note: "Normal morning reading" },
+  { week: 14, kg: 60.5, bp: "114/74", note: "Trimester 2 start" },
+  { week: 18, kg: 62, bp: "115/74", note: "After afternoon walk" },
+  { week: 22, kg: 64, bp: "116/75", note: "Post doctor visit" },
+  { week: 24, kg: 65, bp: "116/75", note: "Feeling energetic & healthy" },
 ];
 
 export const VISITS = [
-  { date: "2026-02-20", doctor: "Dr. Rahman", note: "Initial confirmation, prenatal vitamins prescribed", bp: "110/70" },
-  { date: "2026-03-30", doctor: "Dr. Rahman", note: "Heartbeat check — 150 bpm, strong", bp: "112/72" },
-  { date: "2026-05-25", doctor: "Dr. Rahman", note: "Anatomy scan, all measurements on track", bp: "115/74" },
-  { date: "2026-06-22", doctor: "Dr. Rahman", note: "Routine check, glucose screening scheduled", bp: "116/75" },
+  {
+    date: "2026-02-20",
+    doctor: "Dr. Rahman",
+    note: "Initial confirmation, prenatal vitamins prescribed",
+    bp: "110/70",
+    attachments: [
+      { id: "v1_1", name: "Prenatal_Vitamins_Prescription.pdf", url: "/images/ultrasound.jpg" },
+      { id: "v1_2", name: "Initial_Blood_Work_Report.pdf", url: "/images/bump.jpg" }
+    ]
+  },
+  {
+    date: "2026-03-30",
+    doctor: "Dr. Rahman",
+    note: "Heartbeat check — 150 bpm, strong",
+    bp: "112/72",
+    attachments: []
+  },
+  {
+    date: "2026-05-25",
+    doctor: "Dr. Rahman",
+    note: "Anatomy scan, all measurements on track",
+    bp: "115/74",
+    attachments: [
+      { id: "v3_1", name: "Anatomy_Scan_Report.jpg", url: "/images/ultrasound.jpg" }
+    ]
+  },
+  {
+    date: "2026-06-22",
+    doctor: "Dr. Rahman",
+    note: "Routine check, glucose screening scheduled",
+    bp: "116/75",
+    attachments: [
+      { id: "v4_1", name: "Glucose_Screen_Lab_Report.pdf", url: "/images/bump.jpg" },
+      { id: "v4_2", name: "Iron_Supplements_Prescription.pdf", url: "/images/ultrasound.jpg" }
+    ]
+  },
 ];
 
 export const CHECKLISTS = {

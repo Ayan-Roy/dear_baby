@@ -2,18 +2,34 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Sparkles, Camera, BookOpen, Stethoscope, Footprints, RotateCcw, Calendar, ArrowRight, Heart } from "lucide-react";
 import { ProgressRing, StatCard } from "../components/UI.jsx";
+import BabyGrowthCard from "../components/BabyGrowthCard.jsx";
 import { CURRENT_WEEK, DUE_DATE, PROMPTS } from "../data/dummyData.js";
 import { daysBetween, fmtDate } from "../utils.js";
 
-export default function Dashboard({ events = [], journal = [], photos = [], visits = [], kickData, logKick, resetKicks }) {
+export default function Dashboard({ user, events = [], journal = [], photos = [], visits = [], kickData, logKick, resetKicks }) {
   const navigate = useNavigate();
   const today = new Date();
-  const daysLeft = Math.max(0, daysBetween(today, DUE_DATE));
-  const pct = Math.min(100, Math.round((CURRENT_WEEK / 40) * 100));
+  
+  const currentWeek = user?.currentWeek || CURRENT_WEEK;
+  const dueDateStr = user?.dueDate || DUE_DATE;
+  const dueDateObj = new Date(dueDateStr);
+  const daysLeft = Math.max(0, daysBetween(today, dueDateObj));
+  const pct = Math.min(100, Math.round((currentWeek / 40) * 100));
   const promptOfDay = PROMPTS[new Date().getDate() % PROMPTS.length];
   const sorted = [...events].sort((a, b) => new Date(a.date) - new Date(b.date));
 
+  const recommendedGoal = currentWeek < 28 ? 6 : (currentWeek < 37 ? 10 : 12);
+
   const [kickPulsing, setKickPulsing] = useState(false);
+  const [kickTargetMode, setKickTargetMode] = useState(() => {
+    return localStorage.getItem("dear_baby_kick_mode") || "auto";
+  });
+  const [customKickTarget, setCustomKickTarget] = useState(() => {
+    const saved = localStorage.getItem("dear_baby_kick_target");
+    return saved ? Number(saved) : 10;
+  });
+
+  const kickTarget = kickTargetMode === "auto" ? recommendedGoal : customKickTarget;
 
   function handleKickClick() {
     setKickPulsing(true);
@@ -21,8 +37,22 @@ export default function Dashboard({ events = [], journal = [], photos = [], visi
     setTimeout(() => setKickPulsing(false), 400);
   }
 
-  const kickTarget = 10;
+  function handleTargetChange(val) {
+    if (val === "auto") {
+      setKickTargetMode("auto");
+      localStorage.setItem("dear_baby_kick_mode", "auto");
+    } else {
+      const num = Number(val);
+      setKickTargetMode("custom");
+      setCustomKickTarget(num);
+      localStorage.setItem("dear_baby_kick_mode", "custom");
+      localStorage.setItem("dear_baby_kick_target", num);
+    }
+  }
+
   const kickPct = Math.min(100, Math.round(((kickData?.count || 0) / kickTarget) * 100));
+
+  const mamaName = user?.name ? user.name.split(" ")[0] : "Mama";
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
@@ -31,12 +61,12 @@ export default function Dashboard({ events = [], journal = [], photos = [], visi
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
             <span className="db-chip active" style={{ fontSize: 11, padding: "3px 10px", background: "var(--rose)", borderColor: "var(--rose)" }}>
-              Trimester 2 · Week {CURRENT_WEEK}
+              Week {currentWeek} · Baby {user?.babyNickname || "Little Bean"}
             </span>
             <span style={{ fontSize: 13, color: "var(--ink-soft)" }}>{fmtDate(today)}</span>
           </div>
           <h1 className="db-serif db-page-title" style={{ fontSize: 32 }}>
-            Good morning. Week {CURRENT_WEEK} looks lovely on you.
+            Good morning, {mamaName}. Week {currentWeek} looks lovely on you.
           </h1>
         </div>
       </div>
@@ -45,11 +75,11 @@ export default function Dashboard({ events = [], journal = [], photos = [], visi
       <div className="db-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 20 }}>
         {/* Progress Ring Card */}
         <div className="db-card" style={{ display: "flex", alignItems: "center", gap: 24, background: "linear-gradient(135deg, var(--card), var(--paper-alt))" }}>
-          <ProgressRing pct={pct} label={`Wk ${CURRENT_WEEK}`} sub="of 40" />
+          <ProgressRing pct={pct} label={`Wk ${currentWeek}`} sub="of 40" />
           <div style={{ flex: 1 }}>
             <div className="db-label">Due Date</div>
             <div className="db-serif" style={{ fontSize: 20, fontWeight: 600, color: "var(--ink)", marginBottom: 10 }}>
-              {fmtDate(DUE_DATE)}
+              {fmtDate(dueDateObj)}
             </div>
             <div className="db-label">Countdown</div>
             <div className="db-serif" style={{ fontSize: 20, fontWeight: 600, color: "var(--rose)" }}>
@@ -73,6 +103,10 @@ export default function Dashboard({ events = [], journal = [], photos = [], visi
           </button>
         </div>
       </div>
+
+      {/* Graphical Representation of Baby at Current Week */}
+      <BabyGrowthCard currentWeek={currentWeek} />
+
 
       {/* Interactive Baby Kick & Flutter Counter Card */}
       <div className="db-card" style={{ background: "linear-gradient(135deg, var(--rose-light), #FAF0F2)", border: "1px solid var(--rose)" }}>
@@ -132,11 +166,26 @@ export default function Dashboard({ events = [], journal = [], photos = [], visi
               </div>
             </div>
 
-            {/* Target Progress Bar */}
+            {/* Target Progress Bar & Custom Goal Selector */}
             <div>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "var(--ink-soft)", marginBottom: 4 }}>
-                <span>Daily movement goal ({kickTarget} kicks)</span>
-                <span style={{ fontWeight: 600, color: "var(--ink)" }}>{kickPct}%</span>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12, color: "var(--ink-soft)", marginBottom: 6, flexWrap: "wrap", gap: 6 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span>Daily Goal Target:</span>
+                  <select
+                    className="db-input"
+                    value={kickTargetMode === "auto" ? "auto" : customKickTarget}
+                    onChange={e => handleTargetChange(e.target.value)}
+                    style={{ padding: "3px 26px 3px 10px", fontSize: 12, height: "auto", fontWeight: 700, width: "auto" }}
+                  >
+                    <option value="auto">Auto ({recommendedGoal} kicks for Wk {currentWeek}) 🤖</option>
+                    <option value={6}>6 kicks (Early 2nd Trimester)</option>
+                    <option value={10}>10 kicks (Standard ACOG 🎯)</option>
+                    <option value={12}>12 kicks (Late Term)</option>
+                    <option value={15}>15 kicks (Active Baby)</option>
+                    <option value={20}>20 kicks</option>
+                  </select>
+                </div>
+                <span style={{ fontWeight: 700, color: kickPct >= 100 ? "var(--sage)" : "var(--rose)" }}>{kickPct}%</span>
               </div>
               <div style={{ width: "100%", height: 10, background: "rgba(255,255,255,0.7)", borderRadius: 999, overflow: "hidden" }}>
                 <div

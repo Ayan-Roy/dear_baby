@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Camera, Plus, Heart, X, ChevronLeft, ChevronRight, Grid, Clock, Sparkles } from "lucide-react";
 import { fmtDate } from "../utils.js";
+import { compressImage } from "../utils/imageCompressor.js";
 
 export default function Gallery({ photos = [], addPhoto, togglePhotoFav }) {
   const [filter, setFilter] = useState("All");
@@ -35,20 +36,27 @@ export default function Gallery({ photos = [], addPhoto, togglePhotoFav }) {
     const file = e.target.files[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setDraft(d => ({ ...d, imageFile: file, previewUrl: reader.result }));
+      reader.onloadend = async () => {
+        const rawUrl = reader.result;
+        const compressed = await compressImage(rawUrl);
+        setDraft(d => ({ ...d, imageFile: file, previewUrl: compressed }));
       };
       reader.readAsDataURL(file);
     }
   }
 
-  function handleUploadSubmit(e) {
+  async function handleUploadSubmit(e) {
     e.preventDefault();
-    if (!draft.title || (!draft.previewUrl && !draft.url)) return;
+    if (!draft.title) return;
+
+    let finalUrl = draft.previewUrl || "/images/bump.jpg";
+    if (finalUrl.startsWith("data:image")) {
+      finalUrl = await compressImage(finalUrl);
+    }
 
     addPhoto({
       id: Date.now(),
-      url: draft.previewUrl || "/images/bump.jpg",
+      url: finalUrl,
       title: draft.title,
       cat: draft.cat,
       week: Number(draft.week) || 24,
@@ -243,27 +251,70 @@ export default function Gallery({ photos = [], addPhoto, togglePhotoFav }) {
       {/* Upload Photo Modal */}
       {showUploadModal && (
         <form onSubmit={handleUploadSubmit} className="db-card" style={{ marginTop: 20, border: "2px solid var(--rose)" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-            <div className="db-label">Upload Memory Photo</div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+            <div className="db-label" style={{ color: "var(--rose)", fontSize: 12 }}>Upload Memory Photo</div>
             <button type="button" className="db-btn" onClick={() => setShowUploadModal(false)} style={{ padding: 4 }}>
               <X size={14} />
             </button>
           </div>
 
-          {/* Photo File Input / Preview */}
-          <div style={{ marginBottom: 12 }}>
-            <label style={{ fontSize: 11, color: "var(--ink-soft)", display: "block", marginBottom: 4 }}>Memory Photo File</label>
-            <input className="db-input" type="file" accept="image/*" onChange={handleFileChange} />
-            {draft.previewUrl && (
-              <div style={{ marginTop: 8 }}>
-                <img src={draft.previewUrl} alt="Preview" style={{ height: 100, borderRadius: 8, objectFit: "cover" }} />
+          {/* Photo File Dropzone / Preview */}
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ fontSize: 11, color: "var(--ink-soft)", display: "block", marginBottom: 6, fontWeight: 600 }}>
+              MEMORY PHOTO FILE
+            </label>
+            
+            {draft.previewUrl ? (
+              <div style={{ position: "relative", display: "inline-block", width: "100%" }}>
+                <img
+                  src={draft.previewUrl}
+                  alt="Preview"
+                  style={{ width: "100%", maxHeight: 220, borderRadius: 12, objectFit: "cover", border: "1px solid var(--line)" }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setDraft(d => ({ ...d, imageFile: null, previewUrl: "" }))}
+                  style={{
+                    position: "absolute",
+                    top: 10,
+                    right: 10,
+                    background: "rgba(0,0,0,0.6)",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "50%",
+                    width: 28,
+                    height: 28,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "pointer"
+                  }}
+                >
+                  <X size={16} />
+                </button>
               </div>
+            ) : (
+              <label className="db-file-dropzone">
+                <Camera size={28} color="var(--rose)" />
+                <div style={{ fontSize: 13.5, fontWeight: 600, color: "var(--ink)" }}>
+                  Click to select photo or drag & drop
+                </div>
+                <div style={{ fontSize: 11.5, color: "var(--ink-soft)" }}>
+                  Supports PNG, JPG, WEBP ultrasound scans & bump photos
+                </div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  style={{ display: "none" }}
+                />
+              </label>
             )}
           </div>
 
-          <div className="db-grid" style={{ gridTemplateColumns: "2fr 1fr 1fr", marginBottom: 12 }}>
-            <div>
-              <label style={{ fontSize: 11, color: "var(--ink-soft)", display: "block", marginBottom: 4 }}>Photo Title</label>
+          <div className="db-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 14, marginBottom: 14 }}>
+            <div className="db-form-group">
+              <label style={{ fontSize: 11, color: "var(--ink-soft)", display: "block", marginBottom: 4, fontWeight: 600 }}>PHOTO TITLE *</label>
               <input
                 className="db-input"
                 type="text"
@@ -273,8 +324,8 @@ export default function Gallery({ photos = [], addPhoto, togglePhotoFav }) {
                 required
               />
             </div>
-            <div>
-              <label style={{ fontSize: 11, color: "var(--ink-soft)", display: "block", marginBottom: 4 }}>Album Category</label>
+            <div className="db-form-group">
+              <label style={{ fontSize: 11, color: "var(--ink-soft)", display: "block", marginBottom: 4, fontWeight: 600 }}>ALBUM CATEGORY</label>
               <select className="db-input" value={draft.cat} onChange={e => setDraft({ ...draft, cat: e.target.value })}>
                 <option value="Ultrasound">Ultrasound</option>
                 <option value="Bump Diary">Bump Diary</option>
@@ -282,8 +333,8 @@ export default function Gallery({ photos = [], addPhoto, togglePhotoFav }) {
                 <option value="Milestones">Milestones</option>
               </select>
             </div>
-            <div>
-              <label style={{ fontSize: 11, color: "var(--ink-soft)", display: "block", marginBottom: 4 }}>Pregnancy Week</label>
+            <div className="db-form-group">
+              <label style={{ fontSize: 11, color: "var(--ink-soft)", display: "block", marginBottom: 4, fontWeight: 600 }}>PREGNANCY WEEK</label>
               <input
                 className="db-input"
                 type="number"
@@ -294,16 +345,20 @@ export default function Gallery({ photos = [], addPhoto, togglePhotoFav }) {
             </div>
           </div>
 
-          <textarea
-            className="db-input"
-            rows={2}
-            placeholder="Write the story behind this photo..."
-            value={draft.note}
-            onChange={e => setDraft({ ...draft, note: e.target.value })}
-            style={{ marginBottom: 12 }}
-          />
+          <div className="db-form-group" style={{ marginBottom: 16 }}>
+            <label style={{ fontSize: 11, color: "var(--ink-soft)", display: "block", marginBottom: 4, fontWeight: 600 }}>MEMORY STORY / NOTES</label>
+            <textarea
+              className="db-input"
+              rows={2}
+              placeholder="Write the story behind this photo..."
+              value={draft.note}
+              onChange={e => setDraft({ ...draft, note: e.target.value })}
+            />
+          </div>
 
-          <button type="submit" className="db-btn rose">Save Photo Memory</button>
+          <button type="submit" className="db-btn primary" style={{ width: "100%", justifyContent: "center" }}>
+            <Plus size={16} /> Save Photo Memory
+          </button>
         </form>
       )}
 
