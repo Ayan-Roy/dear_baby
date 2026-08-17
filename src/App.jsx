@@ -12,7 +12,8 @@ import BabyNames from "./pages/BabyNames.jsx";
 import AuthPage from "./pages/AuthPage.jsx";
 import Profile from "./pages/Profile.jsx";
 import { EVENTS, JOURNAL_SEED, WEIGHT_DATA, VISITS, INITIAL_PHOTOS, CHECKLISTS } from "./data/dummyData.js";
-import { RotateCcw } from "lucide-react";
+import { RotateCcw, Baby, Calendar, Heart } from "lucide-react";
+import { daysBetween } from "./utils.js";
 
 // Error Boundary component to prevent any white blank screen crashes
 class ErrorBoundary extends Component {

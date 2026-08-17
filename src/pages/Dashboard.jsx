@@ -112,13 +112,15 @@ export default function Dashboard({
 
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           {!isDelivered ? (
-            <button
-              className="db-btn primary"
-              onClick={() => setShowBirthModal(true)}
-              style={{ background: "linear-gradient(135deg, var(--rose), #B35C66)", border: "none" }}
-            >
-              <PartyPopper size={15} /> 👶 Mark Baby Born / Lock Keepsake
-            </button>
+            currentWeek >= 40 ? (
+              <button
+                className="db-btn primary"
+                onClick={() => setShowBirthModal(true)}
+                style={{ background: "linear-gradient(135deg, var(--rose), #B35C66)", border: "none" }}
+              >
+                <PartyPopper size={15} /> 👶 Mark Baby Born / Lock Keepsake
+              </button>
+            ) : null
           ) : (
             <button
               className="db-btn"

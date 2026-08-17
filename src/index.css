@@ -53,6 +53,66 @@ body {
   width: 100%;
 }
 
+/* Sticky Always On Top Status Bar */
+.db-top-status-bar {
+  position: sticky;
+  top: 0;
+  z-index: 600;
+  background: linear-gradient(135deg, var(--card) 0%, #FFFDF9 100%);
+  border-bottom: 1.5px solid var(--line);
+  box-shadow: 0 2px 10px rgba(43, 36, 56, 0.04);
+  padding: 10px 20px;
+  margin: -34px -44px 24px -44px;
+}
+
+.db-top-status-content {
+  max-width: 1040px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.db-top-status-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--rose-light);
+  border: 1px solid var(--rose);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+
+.db-top-status-pills {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.db-top-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--ink-soft);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  padding: 4px 10px;
+  border-radius: 99px;
+}
+
+.db-top-pill.highlight {
+  background: var(--rose-light);
+  border-color: var(--rose);
+  color: var(--rose);
+  font-weight: 600;
+}
+
 .db-sidebar {
   width: 232px;
   flex-shrink: 0;

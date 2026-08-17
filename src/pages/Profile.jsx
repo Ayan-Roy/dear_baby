@@ -1,10 +1,7 @@
 import React, { useState } from "react";
-import {
-  User, Calendar, Baby, Stethoscope, Heart, Check, LogOut, ShieldCheck, Phone, MapPin, Sparkles, Loader2,
-  HardDrive, Download, Trash2, Database, ShieldAlert, Image as ImageIcon, BookOpen, Clock, HeartPulse
-} from "lucide-react";
+import { User, Heart, Baby, Calendar, Mail, Stethoscope, Phone, Building2, Check, Loader2, LogOut, HardDrive, Image as ImageIcon, BookOpen, Clock, HeartPulse } from "lucide-react";
 import { daysBetween, fmtDate } from "../utils.js";
-import { calculateUserStorage, exportUserData } from "../utils/storageUtils.js";
+import { calculateUserStorage } from "../utils/storageUtils.js";
 
 const AVATAR_OPTIONS = ["🌸", "🧸", "🍼", "👑", "🎀", "🐣", "💛", "🌿", "🌷", "✨"];
 
@@ -81,6 +78,23 @@ export default function Profile({ user, userDataBundle, onUpdateProfile, onLogou
         )}
       </div>
 
+      {/* Main Profile Summary Card - ALWAYS AT VERY TOP OF PROFILE */}
+      <div className="db-card" style={{ background: "linear-gradient(135deg, var(--card), var(--paper-alt))", display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap", border: "1.5px solid var(--rose)" }}>
+        <div style={{ width: 80, height: 80, borderRadius: "50%", background: "var(--rose-light)", border: "2px solid var(--rose)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 40 }}>
+          {formData.avatar}
+        </div>
+        <div style={{ flex: 1 }}>
+          <div className="db-serif" style={{ fontSize: 26, fontWeight: 600, color: "var(--ink)" }}>
+            {formData.name || "Monisha Roy"}
+          </div>
+          <div style={{ color: "var(--ink-soft)", fontSize: 14, marginTop: 4, display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+            <span><Baby size={15} color="var(--rose)" style={{ verticalAlign: -2 }} /> Baby: <strong>{formData.babyNickname}</strong> ({formData.babyGender})</span>
+            <span><Calendar size={15} color="var(--rose)" style={{ verticalAlign: -2 }} /> <strong>Week {formData.currentWeek}</strong></span>
+            <span><Heart size={15} color="var(--rose)" style={{ verticalAlign: -2 }} /> <strong>{isDelivered ? "Baby Born 🎉" : `${daysRemaining} days remaining`}</strong></span>
+          </div>
+        </div>
+      </div>
+
       {/* Keepsake Memory Mode Controls */}
       <div className="db-card" style={{ background: isDelivered ? "linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%)" : "linear-gradient(135deg, var(--card), var(--paper-alt))", border: isDelivered ? "1.5px solid #166534" : "1px solid var(--line)" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 14 }}>
@@ -127,25 +141,222 @@ export default function Profile({ user, userDataBundle, onUpdateProfile, onLogou
         </div>
       )}
 
-      {/* Main Profile Header Card */}
-      <div className="db-card" style={{ background: "linear-gradient(135deg, var(--card), var(--paper-alt))", display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap" }}>
-        <div style={{ width: 80, height: 80, borderRadius: "50%", background: "var(--rose-light)", border: "2px solid var(--rose)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 40 }}>
-          {formData.avatar}
-        </div>
-        <div style={{ flex: 1 }}>
-          <div className="db-serif" style={{ fontSize: 24, fontWeight: 600 }}>
-            {formData.name || "Mother-to-be"}
+      {/* Edit Profile Form */}
+      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+        {/* Section 1: Avatar Selection */}
+        <div className="db-card">
+          <div className="db-label" style={{ marginBottom: 8, color: "var(--rose)" }}>Profile Icon</div>
+          <h3 className="db-serif" style={{ fontSize: 18, margin: "0 0 12px 0" }}>Choose Your Avatar</h3>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            {AVATAR_OPTIONS.map(av => (
+              <button
+                key={av}
+                type="button"
+                onClick={() => handleAvatarSelect(av)}
+                style={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: "50%",
+                  fontSize: 22,
+                  border: formData.avatar === av ? "2px solid var(--rose)" : "1px solid var(--line)",
+                  background: formData.avatar === av ? "var(--rose-light)" : "var(--card)",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  transition: "transform 0.15s ease"
+                }}
+              >
+                {av}
+              </button>
+            ))}
           </div>
-          <div style={{ color: "var(--ink-soft)", fontSize: 13.5, marginTop: 2, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-            <span><Baby size={14} style={{ verticalAlign: -2 }} /> Baby: <strong>{formData.babyNickname}</strong> ({formData.babyGender})</span>
-            <span><Calendar size={14} style={{ verticalAlign: -2 }} /> Week {formData.currentWeek}</span>
-            <span><Heart size={14} style={{ verticalAlign: -2, color: "var(--rose)" }} /> {daysRemaining} days remaining</span>
-          </div>
         </div>
-      </div>
 
-      {/* Total Data Storage Dashboard */}
-      <div className="db-card" style={{ border: "1.5px solid var(--rose)", background: "linear-gradient(135deg, var(--card) 0%, #FFFDF9 100%)" }}>
+        {/* Section 2: Mother & Partner Info */}
+        <div className="db-card">
+          <div className="db-label" style={{ marginBottom: 8, color: "var(--rose)" }}>Mother & Family Info</div>
+          <h3 className="db-serif" style={{ fontSize: 18, margin: "0 0 16px 0" }}>Personal Details</h3>
+
+          <div className="db-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 16 }}>
+            <div className="db-form-group">
+              <label className="db-label">Mother's Full Name *</label>
+              <div style={{ position: "relative" }}>
+                <input
+                  type="text"
+                  name="name"
+                  className="db-input"
+                  value={formData.name}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="db-form-group">
+              <label className="db-label">Email Address (Account ID)</label>
+              <div style={{ position: "relative" }}>
+                <input
+                  type="email"
+                  name="email"
+                  className="db-input"
+                  value={formData.email}
+                  readOnly
+                  disabled
+                  style={{ background: "var(--paper-alt)", color: "var(--ink-soft)" }}
+                />
+              </div>
+            </div>
+
+            <div className="db-form-group">
+              <label className="db-label">Partner's Name</label>
+              <input
+                type="text"
+                name="partnerName"
+                className="db-input"
+                value={formData.partnerName}
+                onChange={handleChange}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Section 3: Baby & Pregnancy Settings */}
+        <div className="db-card">
+          <div className="db-label" style={{ marginBottom: 8, color: "var(--rose)" }}>Pregnancy Tracker Settings</div>
+          <h3 className="db-serif" style={{ fontSize: 18, margin: "0 0 16px 0" }}>Baby & Due Date</h3>
+
+          <div className="db-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 16 }}>
+            <div className="db-form-group">
+              <label className="db-label">Baby's Nickname</label>
+              <input
+                type="text"
+                name="babyNickname"
+                className="db-input"
+                value={formData.babyNickname}
+                onChange={handleChange}
+              />
+            </div>
+
+            <div className="db-form-group">
+              <label className="db-label">Baby Gender / Reveal</label>
+              <select
+                name="babyGender"
+                className="db-input"
+                value={formData.babyGender}
+                onChange={handleChange}
+              >
+                <option value="Girl 👧">Girl 👧</option>
+                <option value="Boy 👦">Boy 👦</option>
+                <option value="Surprise 🎁">Surprise 🎁</option>
+                <option value="Twins 👶👶">Twins 👶👶</option>
+              </select>
+            </div>
+
+            <div className="db-form-group">
+              <label className="db-label">Expected Due Date</label>
+              <input
+                type="date"
+                name="dueDate"
+                className="db-input"
+                value={formData.dueDate}
+                onChange={handleChange}
+              />
+            </div>
+
+            <div className="db-form-group">
+              <label className="db-label">Current Gestational Week (1 - 40)</label>
+              <input
+                type="number"
+                name="currentWeek"
+                min="1"
+                max="40"
+                className="db-input"
+                value={formData.currentWeek}
+                onChange={handleChange}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Section 4: Healthcare & Emergency Contact */}
+        <div className="db-card">
+          <div className="db-label" style={{ marginBottom: 8, color: "var(--rose)" }}>Healthcare & Medical Details</div>
+          <h3 className="db-serif" style={{ fontSize: 18, margin: "0 0 16px 0" }}>Doctor & Hospital Contacts</h3>
+
+          <div className="db-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 16 }}>
+            <div className="db-form-group">
+              <label className="db-label">Primary Obstetrician / Doctor</label>
+              <input
+                type="text"
+                name="doctorName"
+                className="db-input"
+                placeholder="e.g. Dr. Rahman"
+                value={formData.doctorName}
+                onChange={handleChange}
+              />
+            </div>
+
+            <div className="db-form-group">
+              <label className="db-label">Hospital / Birth Center</label>
+              <input
+                type="text"
+                name="hospital"
+                className="db-input"
+                placeholder="e.g. City Maternity Hospital"
+                value={formData.hospital}
+                onChange={handleChange}
+              />
+            </div>
+
+            <div className="db-form-group">
+              <label className="db-label">Blood Group</label>
+              <select
+                name="bloodGroup"
+                className="db-input"
+                value={formData.bloodGroup}
+                onChange={handleChange}
+              >
+                <option value="O Positive (O+)">O Positive (O+)</option>
+                <option value="O Negative (O-)">O Negative (O-)</option>
+                <option value="A Positive (A+)">A Positive (A+)</option>
+                <option value="A Negative (A-)">A Negative (A-)</option>
+                <option value="B Positive (B+)">B Positive (B+)</option>
+                <option value="B Negative (B-)">B Negative (B-)</option>
+                <option value="AB Positive (AB+)">AB Positive (AB+)</option>
+                <option value="AB Negative (AB-)">AB Negative (AB-)</option>
+              </select>
+            </div>
+
+            <div className="db-form-group">
+              <label className="db-label">Emergency Phone</label>
+              <input
+                type="tel"
+                name="emergencyContact"
+                className="db-input"
+                placeholder="e.g. +1 (555) 234-5678"
+                value={formData.emergencyContact}
+                onChange={handleChange}
+              />
+            </div>
+          </div>
+        </div>
+
+        {isSaving && <div className="db-top-loader" />}
+
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: 12 }}>
+          <button type="submit" disabled={isSaving} className="db-btn primary" style={{ padding: "12px 24px", fontSize: 15, opacity: isSaving ? 0.7 : 1 }}>
+            {isSaving ? (
+              <><Loader2 size={16} className="db-spin" /> Saving Changes...</>
+            ) : (
+              <><Check size={16} /> Save Profile Changes</>
+            )}
+          </button>
+        </div>
+      </form>
+
+      {/* Account Storage Breakdown Dashboard — ALWAYS AT THE VERY BOTTOM */}
+      <div className="db-card" style={{ border: "1.5px solid var(--rose)", background: "linear-gradient(135deg, var(--card) 0%, #FFFDF9 100%)", marginTop: 8 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12, marginBottom: 16 }}>
           <div>
             <div className="db-label" style={{ color: "var(--rose)", display: "flex", alignItems: "center", gap: 6 }}>
@@ -207,208 +418,6 @@ export default function Profile({ user, userDataBundle, onUpdateProfile, onLogou
           </div>
         </div>
       </div>
-
-      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-        {/* Section 1: Basic Mother Info */}
-        <div className="db-card">
-          <div className="db-label" style={{ marginBottom: 14, display: "flex", alignItems: "center", gap: 6 }}>
-            <User size={15} color="var(--rose)" /> Personal Details
-          </div>
-
-          <div className="db-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16 }}>
-            <div className="db-form-group">
-              <label className="db-label">Full Name</label>
-              <input
-                type="text"
-                name="name"
-                className="db-input"
-                value={formData.name}
-                onChange={handleChange}
-                required
-              />
-            </div>
-
-            <div className="db-form-group">
-              <label className="db-label">Email Address (Isolated Account Key)</label>
-              <input
-                type="email"
-                name="email"
-                className="db-input"
-                value={formData.email}
-                onChange={handleChange}
-                required
-              />
-            </div>
-
-            <div className="db-form-group">
-              <label className="db-label">Partner's Name</label>
-              <input
-                type="text"
-                name="partnerName"
-                className="db-input"
-                value={formData.partnerName}
-                onChange={handleChange}
-              />
-            </div>
-          </div>
-
-          <div className="db-form-group" style={{ marginTop: 16 }}>
-            <label className="db-label" style={{ marginBottom: 8 }}>Choose Avatar Emoji</label>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              {AVATAR_OPTIONS.map(av => (
-                <button
-                  key={av}
-                  type="button"
-                  onClick={() => handleAvatarSelect(av)}
-                  style={{
-                    width: 38,
-                    height: 38,
-                    borderRadius: "50%",
-                    fontSize: 20,
-                    border: formData.avatar === av ? "2px solid var(--rose)" : "1px solid var(--line)",
-                    background: formData.avatar === av ? "var(--rose-light)" : "var(--card)",
-                    cursor: "pointer",
-                    transition: "all 0.15s ease"
-                  }}
-                >
-                  {av}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Section 2: Baby & Pregnancy Details */}
-        <div className="db-card">
-          <div className="db-label" style={{ marginBottom: 14, display: "flex", alignItems: "center", gap: 6 }}>
-            <Baby size={15} color="var(--rose)" /> Baby & Pregnancy Details
-          </div>
-
-          <div className="db-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
-            <div className="db-form-group">
-              <label className="db-label">Baby Nickname</label>
-              <input
-                type="text"
-                name="babyNickname"
-                className="db-input"
-                value={formData.babyNickname}
-                onChange={handleChange}
-              />
-            </div>
-
-            <div className="db-form-group">
-              <label className="db-label">Gender (or Surprise)</label>
-              <input
-                type="text"
-                name="babyGender"
-                className="db-input"
-                value={formData.babyGender}
-                onChange={handleChange}
-              />
-            </div>
-
-            <div className="db-form-group">
-              <label className="db-label">Estimated Due Date</label>
-              <input
-                type="date"
-                name="dueDate"
-                className="db-input"
-                value={formData.dueDate}
-                onChange={handleChange}
-              />
-            </div>
-
-            <div className="db-form-group">
-              <label className="db-label">Current Pregnancy Week</label>
-              <input
-                type="number"
-                name="currentWeek"
-                min="1"
-                max="42"
-                className="db-input"
-                value={formData.currentWeek}
-                onChange={handleChange}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Section 3: Healthcare & Emergency */}
-        <div className="db-card">
-          <div className="db-label" style={{ marginBottom: 14, display: "flex", alignItems: "center", gap: 6 }}>
-            <Stethoscope size={15} color="var(--rose)" /> Healthcare & Doctor Details
-          </div>
-
-          <div className="db-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
-            <div className="db-form-group">
-              <label className="db-label">Doctor / Obstetrician</label>
-              <input
-                type="text"
-                name="doctorName"
-                className="db-input"
-                placeholder="e.g. Dr. Rahman"
-                value={formData.doctorName}
-                onChange={handleChange}
-              />
-            </div>
-
-            <div className="db-form-group">
-              <label className="db-label">Hospital / Clinic</label>
-              <input
-                type="text"
-                name="hospital"
-                className="db-input"
-                placeholder="e.g. City Maternity Hospital"
-                value={formData.hospital}
-                onChange={handleChange}
-              />
-            </div>
-
-            <div className="db-form-group">
-              <label className="db-label">Blood Group</label>
-              <select
-                name="bloodGroup"
-                className="db-input"
-                value={formData.bloodGroup}
-                onChange={handleChange}
-              >
-                <option value="O Positive (O+)">O Positive (O+)</option>
-                <option value="O Negative (O-)">O Negative (O-)</option>
-                <option value="A Positive (A+)">A Positive (A+)</option>
-                <option value="A Negative (A-)">A Negative (A-)</option>
-                <option value="B Positive (B+)">B Positive (B+)</option>
-                <option value="B Negative (B-)">B Negative (B-)</option>
-                <option value="AB Positive (AB+)">AB Positive (AB+)</option>
-                <option value="AB Negative (AB-)">AB Negative (AB-)</option>
-              </select>
-            </div>
-
-            <div className="db-form-group">
-              <label className="db-label">Emergency Phone</label>
-              <input
-                type="tel"
-                name="emergencyContact"
-                className="db-input"
-                placeholder="e.g. +1 (555) 234-5678"
-                value={formData.emergencyContact}
-                onChange={handleChange}
-              />
-            </div>
-          </div>
-        </div>
-
-        {isSaving && <div className="db-top-loader" />}
-
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: 12 }}>
-          <button type="submit" disabled={isSaving} className="db-btn primary" style={{ padding: "12px 24px", fontSize: 15, opacity: isSaving ? 0.7 : 1 }}>
-            {isSaving ? (
-              <><Loader2 size={16} className="db-spin" /> Saving Changes...</>
-            ) : (
-              <><Check size={16} /> Save Profile Changes</>
-            )}
-          </button>
-        </div>
-      </form>
     </div>
   );
 }
