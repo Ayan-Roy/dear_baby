@@ -424,7 +424,7 @@ export default function Medical({ weightData, visits, vitals, addVisit, addWeigh
           </button>
         </div>
 
-        <div style={{ overflowX: "auto" }}>
+        <div className="db-table-scroll" style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: 13.5 }}>
             <thead>
               <tr style={{ borderBottom: "1px solid var(--line)", color: "var(--ink-soft)", fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase" }}>
