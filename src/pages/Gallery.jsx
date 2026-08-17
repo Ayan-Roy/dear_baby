@@ -3,7 +3,7 @@ import { Camera, Plus, Heart, X, ChevronLeft, ChevronRight, Grid, Clock, Sparkle
 import { fmtDate } from "../utils.js";
 import { compressImage } from "../utils/imageCompressor.js";
 
-export default function Gallery({ photos = [], addPhoto, togglePhotoFav }) {
+export default function Gallery({ photos = [], addPhoto, togglePhotoFav, isDelivered }) {
   const [filter, setFilter] = useState("All");
   const [viewMode, setViewMode] = useState("grid"); // "grid" | "timeline"
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -33,6 +33,7 @@ export default function Gallery({ photos = [], addPhoto, togglePhotoFav }) {
   const timelineSorted = [...photos].sort((a, b) => (a.week || 0) - (b.week || 0));
 
   function handleFileChange(e) {
+    if (isDelivered) return;
     const file = e.target.files[0];
     if (file) {
       const reader = new FileReader();
@@ -47,7 +48,7 @@ export default function Gallery({ photos = [], addPhoto, togglePhotoFav }) {
 
   async function handleUploadSubmit(e) {
     e.preventDefault();
-    if (!draft.title) return;
+    if (isDelivered || !draft.title) return;
 
     let finalUrl = draft.previewUrl || "/images/bump.jpg";
     if (finalUrl.startsWith("data:image")) {
@@ -114,9 +115,15 @@ export default function Gallery({ photos = [], addPhoto, togglePhotoFav }) {
             </button>
           </div>
 
-          <button className="db-btn rose" onClick={() => setShowUploadModal(true)}>
-            <Plus size={14} /> Upload memory
-          </button>
+          {!isDelivered ? (
+            <button className="db-btn rose" onClick={() => setShowUploadModal(true)}>
+              <Plus size={14} /> Upload memory
+            </button>
+          ) : (
+            <span style={{ fontSize: 12, fontWeight: 700, color: "#166534", background: "#DCFCE7", padding: "6px 14px", borderRadius: 99, display: "inline-flex", alignItems: "center", gap: 6 }}>
+              🔒 Photo Gallery Locked & Preserved
+            </span>
+          )}
         </div>
       </div>
 

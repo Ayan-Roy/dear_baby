@@ -1,26 +1,51 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Sparkles, Camera, BookOpen, Stethoscope, Footprints, RotateCcw, Calendar, ArrowRight, Heart } from "lucide-react";
+import { Sparkles, Camera, BookOpen, Stethoscope, Footprints, RotateCcw, Calendar, ArrowRight, Heart, Lock, Unlock, PartyPopper, Check, Baby, X } from "lucide-react";
 import { ProgressRing, StatCard } from "../components/UI.jsx";
 import BabyGrowthCard from "../components/BabyGrowthCard.jsx";
 import { CURRENT_WEEK, DUE_DATE, PROMPTS } from "../data/dummyData.js";
 import { daysBetween, fmtDate } from "../utils.js";
 
-export default function Dashboard({ user, events = [], journal = [], photos = [], visits = [], kickData, logKick, resetKicks }) {
+export default function Dashboard({
+  user,
+  events = [],
+  journal = [],
+  photos = [],
+  visits = [],
+  kickData,
+  logKick,
+  resetKicks,
+  onMarkDelivered,
+  onToggleKeepsakeMode
+}) {
   const navigate = useNavigate();
   const today = new Date();
+
+  const isDelivered = Boolean(user?.isDelivered);
+  const birthDetails = user?.birthDetails;
   
   const currentWeek = user?.currentWeek || CURRENT_WEEK;
   const dueDateStr = user?.dueDate || DUE_DATE;
   const dueDateObj = new Date(dueDateStr);
   const daysLeft = Math.max(0, daysBetween(today, dueDateObj));
-  const pct = Math.min(100, Math.round((currentWeek / 40) * 100));
+  const pct = isDelivered ? 100 : Math.min(100, Math.round((currentWeek / 40) * 100));
   const promptOfDay = PROMPTS[new Date().getDate() % PROMPTS.length];
   const sorted = [...events].sort((a, b) => new Date(a.date) - new Date(b.date));
 
   const recommendedGoal = currentWeek < 28 ? 6 : (currentWeek < 37 ? 10 : 12);
 
   const [kickPulsing, setKickPulsing] = useState(false);
+  const [showBirthModal, setShowBirthModal] = useState(false);
+
+  const [birthForm, setBirthForm] = useState({
+    birthDate: new Date().toISOString().split("T")[0],
+    birthTime: "08:30 AM",
+    birthWeight: "3.4 kg",
+    birthLength: "51 cm",
+    birthPhoto: "/images/bump.jpg",
+    note: "Welcome to the world, our precious angel!"
+  });
+
   const [kickTargetMode, setKickTargetMode] = useState(() => {
     return localStorage.getItem("dear_baby_kick_mode") || "auto";
   });
@@ -32,6 +57,7 @@ export default function Dashboard({ user, events = [], journal = [], photos = []
   const kickTarget = kickTargetMode === "auto" ? recommendedGoal : customKickTarget;
 
   function handleKickClick() {
+    if (isDelivered) return;
     setKickPulsing(true);
     logKick();
     setTimeout(() => setKickPulsing(false), 400);
@@ -50,7 +76,11 @@ export default function Dashboard({ user, events = [], journal = [], photos = []
     }
   }
 
-  const kickPct = Math.min(100, Math.round(((kickData?.count || 0) / kickTarget) * 100));
+  function handleSaveBirth(e) {
+    e.preventDefault();
+    onMarkDelivered(birthForm);
+    setShowBirthModal(false);
+  }
 
   const mamaName = user?.name ? user.name.split(" ")[0] : "Mama";
 
@@ -60,30 +90,132 @@ export default function Dashboard({ user, events = [], journal = [], photos = []
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12 }}>
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-            <span className="db-chip active" style={{ fontSize: 11, padding: "3px 10px", background: "var(--rose)", borderColor: "var(--rose)" }}>
-              Week {currentWeek} · Baby {user?.babyNickname || "Little Bean"}
+            <span
+              className="db-chip active"
+              style={{
+                fontSize: 11,
+                padding: "3px 10px",
+                background: isDelivered ? "var(--sage)" : "var(--rose)",
+                borderColor: isDelivered ? "var(--sage)" : "var(--rose)"
+              }}
+            >
+              {isDelivered ? "🎉 Baby Arrived & Memories Preserved" : `Week ${currentWeek} · Baby ${user?.babyNickname || "Little Bean"}`}
             </span>
             <span style={{ fontSize: 13, color: "var(--ink-soft)" }}>{fmtDate(today)}</span>
           </div>
           <h1 className="db-serif db-page-title" style={{ fontSize: 32 }}>
-            Good morning, {mamaName}. Week {currentWeek} looks lovely on you.
+            {isDelivered
+              ? `Welcome to the world! ${user?.babyNickname || "Baby"} is here 💕`
+              : `Good morning, ${mamaName}. Week ${currentWeek} looks lovely on you.`}
           </h1>
         </div>
+
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {!isDelivered ? (
+            <button
+              className="db-btn primary"
+              onClick={() => setShowBirthModal(true)}
+              style={{ background: "linear-gradient(135deg, var(--rose), #B35C66)", border: "none" }}
+            >
+              <PartyPopper size={15} /> 👶 Mark Baby Born / Lock Keepsake
+            </button>
+          ) : (
+            <button
+              className="db-btn"
+              onClick={() => onToggleKeepsakeMode(false)}
+              style={{ fontSize: 12, borderColor: "var(--line)", color: "var(--ink-soft)" }}
+            >
+              <Unlock size={14} /> Switch to Edit Mode
+            </button>
+          )}
+        </div>
       </div>
+
+      {/* Celebratory Birth Banner when Keepsake Mode is Active */}
+      {isDelivered && (
+        <div
+          className="db-card"
+          style={{
+            background: "linear-gradient(135deg, #FFF9F2 0%, #F5EAE6 100%)",
+            border: "2px solid var(--rose)",
+            boxShadow: "0 10px 30px rgba(198, 118, 127, 0.15)",
+            padding: 24,
+            display: "flex",
+            flexDirection: "column",
+            gap: 16
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12 }}>
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--rose)", fontWeight: 700, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 4 }}>
+                <PartyPopper size={16} /> Official Birth Memory Keepsake Archive
+              </div>
+              <h2 className="db-serif" style={{ fontSize: 26, margin: 0, color: "var(--ink)" }}>
+                {user?.babyNickname || "Baby"} has arrived! 💕
+              </h2>
+            </div>
+            <span
+              style={{
+                fontSize: 11.5,
+                fontWeight: 700,
+                color: "#166534",
+                background: "#DCFCE7",
+                padding: "4px 12px",
+                borderRadius: 99,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 5
+              }}
+            >
+              <Lock size={12} /> 🔒 Preserved Memory Book (Read-Only)
+            </span>
+          </div>
+
+          <div className="db-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
+            <div style={{ background: "var(--card)", padding: 12, borderRadius: 10, border: "1px solid var(--line)" }}>
+              <div className="db-label">Birth Date</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: "var(--ink)" }}>
+                {birthDetails?.birthDate ? fmtDate(birthDetails.birthDate) : fmtDate(today)}
+              </div>
+            </div>
+
+            <div style={{ background: "var(--card)", padding: 12, borderRadius: 10, border: "1px solid var(--line)" }}>
+              <div className="db-label">Birth Weight</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: "var(--ink)" }}>
+                {birthDetails?.birthWeight || "3.4 kg"}
+              </div>
+            </div>
+
+            <div style={{ background: "var(--card)", padding: 12, borderRadius: 10, border: "1px solid var(--line)" }}>
+              <div className="db-label">Birth Length</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: "var(--ink)" }}>
+                {birthDetails?.birthLength || "51 cm"}
+              </div>
+            </div>
+
+            <div style={{ background: "var(--card)", padding: 12, borderRadius: 10, border: "1px solid var(--line)" }}>
+              <div className="db-label">Total Saved Letters</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: "var(--rose)" }}>
+                📖 {journal.length} Letters & Memories
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Top Grid: Pregnancy Progress + Journal Prompt */}
       <div className="db-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 20 }}>
         {/* Progress Ring Card */}
         <div className="db-card" style={{ display: "flex", alignItems: "center", gap: 24, background: "linear-gradient(135deg, var(--card), var(--paper-alt))" }}>
-          <ProgressRing pct={pct} label={`Wk ${currentWeek}`} sub="of 40" />
+          <ProgressRing pct={pct} label={isDelivered ? "100%" : `Wk ${currentWeek}`} sub={isDelivered ? "Completed" : "of 40"} />
           <div style={{ flex: 1 }}>
-            <div className="db-label">Due Date</div>
+            <div className="db-label">{isDelivered ? "Status" : "Due Date"}</div>
             <div className="db-serif" style={{ fontSize: 20, fontWeight: 600, color: "var(--ink)", marginBottom: 10 }}>
-              {fmtDate(dueDateObj)}
+              {isDelivered ? "Baby Delivered 🎉" : fmtDate(dueDateObj)}
             </div>
-            <div className="db-label">Countdown</div>
+            <div className="db-label">{isDelivered ? "Keepsake Status" : "Countdown"}</div>
             <div className="db-serif" style={{ fontSize: 20, fontWeight: 600, color: "var(--rose)" }}>
-              {daysLeft} days remaining
+              {isDelivered ? "Safely Preserved 💕" : `${daysLeft} days remaining`}
             </div>
           </div>
         </div>
@@ -92,193 +224,205 @@ export default function Dashboard({ user, events = [], journal = [], photos = []
         <div className="db-card" style={{ background: "linear-gradient(135deg, var(--sage-light), #EEF3E8)", border: "1px solid var(--sage)", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
           <div>
             <div className="db-label" style={{ color: "var(--sage)", display: "flex", alignItems: "center", gap: 6 }}>
-              <Sparkles size={13} /> Today's Journal Prompt
+              <Sparkles size={13} /> {isDelivered ? "Featured Letter Memory" : "Today's Journal Prompt"}
             </div>
             <p className="db-serif" style={{ fontStyle: "italic", fontSize: 17, margin: "10px 0 0 0", lineHeight: 1.45, color: "var(--ink)" }}>
               "{promptOfDay}"
             </p>
           </div>
           <button className="db-btn primary" style={{ alignSelf: "flex-start", marginTop: 16 }} onClick={() => navigate("/journal")}>
-            <BookOpen size={14} /> Write today's letter
+            <BookOpen size={14} /> {isDelivered ? "Browse Memory Letters" : "Write today's letter"}
           </button>
         </div>
       </div>
 
-      {/* Graphical Representation of Baby at Current Week */}
+      {/* Fetal Growth Card */}
       <BabyGrowthCard currentWeek={currentWeek} />
 
-
-      {/* Interactive Baby Kick & Flutter Counter Card */}
-      <div className="db-card" style={{ background: "linear-gradient(135deg, var(--rose-light), #FAF0F2)", border: "1px solid var(--rose)" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12, marginBottom: 16 }}>
+      {/* Kick Counter Card */}
+      <div className="db-card">
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12, marginBottom: 14 }}>
           <div>
-            <div className="db-label" style={{ color: "var(--rose)", display: "flex", alignItems: "center", gap: 6 }}>
-              <Footprints size={15} /> Baby Kick & Flutter Tracker
-            </div>
-            <div className="db-serif" style={{ fontSize: 18, fontWeight: 600, marginTop: 2 }}>
-              Count your baby's daily movements
-            </div>
+            <div className="db-label" style={{ color: "var(--rose)" }}>Fetal Movement Tracking</div>
+            <h3 className="db-serif" style={{ fontSize: 18, margin: "2px 0 0 0" }}>Daily Kick Counter</h3>
           </div>
 
-          <button className="db-btn" onClick={resetKicks} style={{ fontSize: 12, padding: "5px 10px" }}>
-            <RotateCcw size={13} /> Reset session
-          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 12, color: "var(--ink-soft)", fontWeight: 600 }}>Daily Goal:</span>
+            <select
+              disabled={isDelivered}
+              value={kickTargetMode === "auto" ? "auto" : customKickTarget.toString()}
+              onChange={e => handleTargetChange(e.target.value)}
+              className="db-input"
+              style={{ padding: "4px 8px", fontSize: 12, width: "auto" }}
+            >
+              <option value="auto">Auto ({recommendedGoal} kicks for Wk {currentWeek})</option>
+              <option value="6">6 kicks</option>
+              <option value="10">10 kicks</option>
+              <option value="12">12 kicks</option>
+              <option value="15">15 kicks</option>
+              <option value="20">20 kicks</option>
+            </select>
+          </div>
         </div>
 
-        <div className="db-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 20, alignItems: "center" }}>
-          {/* Large Tap to Count Button */}
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
-            <button
-              onClick={handleKickClick}
-              style={{
-                width: 110,
-                height: 110,
-                borderRadius: "50%",
-                background: "var(--rose)",
-                color: "white",
-                border: "4px solid white",
-                boxShadow: kickPulsing
-                  ? "0 0 0 16px rgba(198,118,127,0.3)"
-                  : "0 6px 20px rgba(198,118,127,0.35)",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                cursor: "pointer",
-                transform: kickPulsing ? "scale(0.94)" : "scale(1)",
-                transition: "all 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275)"
-              }}
-            >
-              <Footprints size={28} />
-              <span style={{ fontSize: 12, fontWeight: 700, marginTop: 4 }}>+ Record Kick</span>
-            </button>
-            <span style={{ fontSize: 11.5, color: "var(--ink-soft)" }}>Tap every time baby kicks or flutters</span>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-around", flexWrap: "wrap", gap: 20 }}>
+          <button
+            onClick={handleKickClick}
+            disabled={isDelivered}
+            style={{
+              width: 110,
+              height: 110,
+              borderRadius: "50%",
+              background: isDelivered ? "var(--paper-alt)" : "linear-gradient(135deg, var(--rose-light), #F8D3D7)",
+              border: "3px solid var(--rose)",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: isDelivered ? "default" : "pointer",
+              transform: kickPulsing ? "scale(0.93)" : "scale(1)",
+              transition: "transform 0.15s ease",
+              boxShadow: "0 6px 20px rgba(198, 118, 127, 0.2)"
+            }}
+          >
+            <Footprints size={26} color="var(--rose)" />
+            <span style={{ fontSize: 11, fontWeight: 700, color: "var(--rose)", marginTop: 2 }}>
+              {isDelivered ? "Preserved" : "Tap Kick!"}
+            </span>
+          </button>
+
+          <div style={{ textAlign: "center" }}>
+            <div className="db-serif" style={{ fontSize: 44, fontWeight: 700, color: "var(--ink)", lineHeight: 1 }}>
+              {kickData?.count || 0} <span style={{ fontSize: 20, color: "var(--ink-soft)", fontWeight: 400 }}>/ {kickTarget}</span>
+            </div>
+            <div style={{ fontSize: 13, color: "var(--sage)", fontWeight: 600, marginTop: 6 }}>
+              {((kickData?.count || 0) >= kickTarget) ? "🎉 Goal reached for today!" : `${kickTarget - (kickData?.count || 0)} kicks left`}
+            </div>
+            <div style={{ fontSize: 11.5, color: "var(--ink-soft)", marginTop: 2 }}>
+              Last kick: {kickData?.lastKickTime || "None logged today"}
+            </div>
           </div>
 
-          {/* Kick Stats & Progress Bar */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 10, flex: 1 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-              <div style={{ fontSize: 32, fontWeight: 700, fontFamily: "Fraunces, serif", color: "var(--ink)" }}>
-                {kickData?.count || 0} <span style={{ fontSize: 16, fontWeight: 500, color: "var(--ink-soft)" }}>kicks today</span>
+          {!isDelivered && (
+            <button className="db-btn" onClick={resetKicks} style={{ fontSize: 11.5 }}>
+              <RotateCcw size={13} /> Reset Counter
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Birth Registration Modal */}
+      {showBirthModal && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(20, 16, 28, 0.85)",
+            backdropFilter: "blur(6px)",
+            zIndex: 1000,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 20
+          }}
+          onClick={() => setShowBirthModal(false)}
+        >
+          <form
+            onSubmit={handleSaveBirth}
+            className="db-card"
+            style={{ maxWidth: 620, width: "100%", background: "var(--card)", borderRadius: 20, padding: "32px 36px" }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 18, gap: 16 }}>
+              <div style={{ flex: 1, paddingRight: 8 }}>
+                <div className="db-label" style={{ color: "var(--rose)", display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                  <PartyPopper size={15} /> Congratulations!
+                </div>
+                <h3 className="db-serif" style={{ fontSize: 24, lineHeight: 1.3, margin: 0, color: "var(--ink)" }}>
+                  Record Baby's Birth & Preserve Memories
+                </h3>
               </div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: "var(--rose)" }}>
-                Last: {kickData?.lastKickTime || "Just now"}
-              </div>
+              <button type="button" className="db-btn" onClick={() => setShowBirthModal(false)} style={{ padding: "6px 10px", borderRadius: 8, flexShrink: 0 }}>
+                <X size={18} />
+              </button>
             </div>
 
-            {/* Target Progress Bar & Custom Goal Selector */}
-            <div>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12, color: "var(--ink-soft)", marginBottom: 6, flexWrap: "wrap", gap: 6 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <span>Daily Goal Target:</span>
-                  <select
-                    className="db-input"
-                    value={kickTargetMode === "auto" ? "auto" : customKickTarget}
-                    onChange={e => handleTargetChange(e.target.value)}
-                    style={{ padding: "3px 26px 3px 10px", fontSize: 12, height: "auto", fontWeight: 700, width: "auto" }}
-                  >
-                    <option value="auto">Auto ({recommendedGoal} kicks for Wk {currentWeek}) 🤖</option>
-                    <option value={6}>6 kicks (Early 2nd Trimester)</option>
-                    <option value={10}>10 kicks (Standard ACOG 🎯)</option>
-                    <option value={12}>12 kicks (Late Term)</option>
-                    <option value={15}>15 kicks (Active Baby)</option>
-                    <option value={20}>20 kicks</option>
-                  </select>
-                </div>
-                <span style={{ fontWeight: 700, color: kickPct >= 100 ? "var(--sage)" : "var(--rose)" }}>{kickPct}%</span>
-              </div>
-              <div style={{ width: "100%", height: 10, background: "rgba(255,255,255,0.7)", borderRadius: 999, overflow: "hidden" }}>
-                <div
-                  style={{
-                    width: `${kickPct}%`,
-                    height: "100%",
-                    background: kickPct >= 100 ? "var(--sage)" : "var(--rose)",
-                    borderRadius: 999,
-                    transition: "width 0.3s ease"
-                  }}
+            <p style={{ fontSize: 13.5, color: "var(--ink-soft)", lineHeight: 1.5, marginBottom: 22 }}>
+              Preserve your pregnancy journey as a lifelong read-only digital memory book for family and friends!
+            </p>
+
+            <div className="db-grid" style={{ gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 18 }}>
+              <div className="db-form-group">
+                <label className="db-label" style={{ marginBottom: 6 }}>Birth Date *</label>
+                <input
+                  className="db-input"
+                  type="date"
+                  style={{ padding: "11px 14px" }}
+                  value={birthForm.birthDate}
+                  onChange={e => setBirthForm({ ...birthForm, birthDate: e.target.value })}
+                  required
                 />
               </div>
-              {kickPct >= 100 && (
-                <div style={{ fontSize: 12, color: "var(--sage)", fontWeight: 600, marginTop: 4, display: "flex", alignItems: "center", gap: 4 }}>
-                  <Heart size={12} fill="var(--sage)" /> Target met! Baby is active & healthy today.
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
 
-      {/* Quick Action Navigation Shortcuts */}
-      <div>
-        <div className="db-label" style={{ marginBottom: 10 }}>Quick Shortcuts</div>
-        <div className="db-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 14 }}>
-          <button className="db-card" onClick={() => navigate("/journal")} style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", textAlign: "left" }}>
-            <BookOpen size={20} color="var(--rose)" />
-            <div>
-              <div style={{ fontWeight: 600, fontSize: 13.5 }}>Write Journal</div>
-              <div style={{ fontSize: 11.5, color: "var(--ink-soft)" }}>Dear Baby notes</div>
-            </div>
-          </button>
-
-          <button className="db-card" onClick={() => navigate("/medical")} style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", textAlign: "left" }}>
-            <Stethoscope size={20} color="var(--rose)" />
-            <div>
-              <div style={{ fontWeight: 600, fontSize: 13.5 }}>Medical Checkup</div>
-              <div style={{ fontSize: 11.5, color: "var(--ink-soft)" }}>Visits & weight</div>
-            </div>
-          </button>
-
-          <button className="db-card" onClick={() => navigate("/gallery")} style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", textAlign: "left" }}>
-            <Camera size={20} color="var(--rose)" />
-            <div>
-              <div style={{ fontWeight: 600, fontSize: 13.5 }}>Photo Gallery</div>
-              <div style={{ fontSize: 11.5, color: "var(--ink-soft)" }}>Ultrasounds & bump</div>
-            </div>
-          </button>
-
-          <button className="db-card" onClick={() => navigate("/calendar")} style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", textAlign: "left" }}>
-            <Calendar size={20} color="var(--rose)" />
-            <div>
-              <div style={{ fontWeight: 600, fontSize: 13.5 }}>Calendar</div>
-              <div style={{ fontSize: 11.5, color: "var(--ink-soft)" }}>Inspect dates</div>
-            </div>
-          </button>
-        </div>
-      </div>
-
-      {/* Summary Stat Cards Grid */}
-      <div className="db-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 14 }}>
-        <StatCard icon={<Sparkles size={17} color="var(--rose)" />} value={events.length} label="Milestones" />
-        <StatCard icon={<Camera size={17} color="var(--rose)" />} value={photos.length} label="Photos" />
-        <StatCard icon={<BookOpen size={17} color="var(--rose)" />} value={journal.length} label="Journal entries" />
-        <StatCard icon={<Stethoscope size={17} color="var(--rose)" />} value={visits.length} label="Doctor visits" />
-      </div>
-
-      {/* Recent Memories Ribbon Section */}
-      <div>
-        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 12 }}>
-          <h2 className="db-serif" style={{ fontSize: 20, fontWeight: 500, margin: 0 }}>Recent memories</h2>
-          <button className="db-btn" onClick={() => navigate("/timeline")} style={{ fontSize: 12.5 }}>
-            See full timeline <ArrowRight size={13} />
-          </button>
-        </div>
-
-        <div className="db-ribbon">
-          {sorted.slice(-3).reverse().map(e => (
-            <div className="db-ribbon-item" key={e.id}>
-              <div className={`db-ribbon-dot ${e.gold ? "gold" : ""}`}>
-                <span style={{ fontSize: 11 }}>{e.mood}</span>
+              <div className="db-form-group">
+                <label className="db-label" style={{ marginBottom: 6 }}>Birth Time</label>
+                <input
+                  className="db-input"
+                  type="text"
+                  placeholder="e.g. 08:30 AM"
+                  style={{ padding: "11px 14px" }}
+                  value={birthForm.birthTime}
+                  onChange={e => setBirthForm({ ...birthForm, birthTime: e.target.value })}
+                />
               </div>
-              <div className="db-card" style={{ padding: "14px 18px", cursor: "pointer" }} onClick={() => navigate("/timeline")}>
-                <div className="db-label">{fmtDate(e.date)} · Week {e.week} · {e.cat}</div>
-                <div className="db-serif" style={{ fontWeight: 600, marginTop: 4, fontSize: 15 }}>{e.title}</div>
-                {e.note && <div style={{ fontSize: 12.5, color: "var(--ink-soft)", marginTop: 4 }}>{e.note}</div>}
+
+              <div className="db-form-group">
+                <label className="db-label" style={{ marginBottom: 6 }}>Birth Weight</label>
+                <input
+                  className="db-input"
+                  type="text"
+                  placeholder="e.g. 3.4 kg"
+                  style={{ padding: "11px 14px" }}
+                  value={birthForm.birthWeight}
+                  onChange={e => setBirthForm({ ...birthForm, birthWeight: e.target.value })}
+                />
+              </div>
+
+              <div className="db-form-group">
+                <label className="db-label" style={{ marginBottom: 6 }}>Birth Length</label>
+                <input
+                  className="db-input"
+                  type="text"
+                  placeholder="e.g. 51 cm"
+                  style={{ padding: "11px 14px" }}
+                  value={birthForm.birthLength}
+                  onChange={e => setBirthForm({ ...birthForm, birthLength: e.target.value })}
+                />
               </div>
             </div>
-          ))}
+
+            <div className="db-form-group" style={{ marginBottom: 24 }}>
+              <label className="db-label" style={{ marginBottom: 6 }}>Welcome Message / Note</label>
+              <input
+                className="db-input"
+                type="text"
+                placeholder="e.g. Welcome to the world, our precious angel!"
+                style={{ padding: "11px 14px" }}
+                value={birthForm.note}
+                onChange={e => setBirthForm({ ...birthForm, note: e.target.value })}
+              />
+            </div>
+
+            <button type="submit" className="db-btn primary" style={{ width: "100%", justifyContent: "center", padding: "14px 20px", fontSize: 15, borderRadius: 12 }}>
+              <PartyPopper size={16} /> Confirm Birth & Lock Memory Keepsake
+            </button>
+          </form>
         </div>
-      </div>
+      )}
     </div>
   );
 }
-

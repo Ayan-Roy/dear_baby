@@ -8,7 +8,9 @@ import { calculateUserStorage, exportUserData } from "../utils/storageUtils.js";
 
 const AVATAR_OPTIONS = ["🌸", "🧸", "🍼", "👑", "🎀", "🐣", "💛", "🌿", "🌷", "✨"];
 
-export default function Profile({ user, userDataBundle, onUpdateProfile, onLogout }) {
+export default function Profile({ user, userDataBundle, onUpdateProfile, onLogout, onMarkDelivered, onToggleKeepsakeMode }) {
+  const isDelivered = Boolean(user?.isDelivered);
+
   const [formData, setFormData] = useState({
     name: user?.name || "Monisha Roy",
     email: user?.email || "monisha@example.com",
@@ -50,14 +52,6 @@ export default function Profile({ user, userDataBundle, onUpdateProfile, onLogou
     }, 350);
   }
 
-  function handleClearCache() {
-    if (window.confirm("Are you sure you want to clear your local memory cache? Make sure to export a backup first!")) {
-      const key = `dear_baby_userdata_${(user?.email || "user").toLowerCase()}`;
-      localStorage.removeItem(key);
-      window.location.reload();
-    }
-  }
-
   const daysRemaining = Math.max(0, daysBetween(new Date(), formData.dueDate));
 
   return (
@@ -85,6 +79,45 @@ export default function Profile({ user, userDataBundle, onUpdateProfile, onLogou
             <LogOut size={15} /> Sign out
           </button>
         )}
+      </div>
+
+      {/* Keepsake Memory Mode Controls */}
+      <div className="db-card" style={{ background: isDelivered ? "linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%)" : "linear-gradient(135deg, var(--card), var(--paper-alt))", border: isDelivered ? "1.5px solid #166534" : "1px solid var(--line)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 14 }}>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: isDelivered ? "#166534" : "var(--rose)", marginBottom: 2 }}>
+              {isDelivered ? "🔒 Memory Keepsake Mode Active" : "🌸 Active Pregnancy Tracking"}
+            </div>
+            <h3 className="db-serif" style={{ fontSize: 18, margin: 0 }}>
+              {isDelivered ? "Pregnancy Journey Safely Preserved as Read-Only Archive" : "Active Pregnancy Journey Logging"}
+            </h3>
+            <p style={{ fontSize: 13, color: "var(--ink-soft)", margin: "4px 0 0 0" }}>
+              {isDelivered
+                ? "Your pregnancy memories are locked in read-only mode for lifelong sharing with family and friends."
+                : "Log your daily letters, photos, and vitals. Mark baby born when delivered to preserve as a read-only memory book."}
+            </p>
+          </div>
+
+          <div>
+            {!isDelivered ? (
+              <button
+                className="db-btn primary"
+                onClick={() => onMarkDelivered()}
+                style={{ background: "var(--rose)", border: "none", fontSize: 13 }}
+              >
+                👶 Mark Baby Born / Preserve Keepsake
+              </button>
+            ) : (
+              <button
+                className="db-btn"
+                onClick={() => onToggleKeepsakeMode(false)}
+                style={{ fontSize: 12, borderColor: "#166534", color: "#166534", background: "#FFF" }}
+              >
+                🔓 Switch to Active Editing Mode
+              </button>
+            )}
+          </div>
+        </div>
       </div>
 
       {savedSuccess && (

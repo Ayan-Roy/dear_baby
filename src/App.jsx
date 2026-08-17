@@ -62,7 +62,9 @@ const DEFAULT_USER = {
   doctorName: "Dr. Rahman",
   hospital: "City Maternity Hospital",
   bloodGroup: "O Positive (O+)",
-  emergencyContact: "+1 (555) 234-5678"
+  emergencyContact: "+1 (555) 234-5678",
+  isDelivered: false,
+  birthDetails: null
 };
 
 function safeArray(val, fallback) {
@@ -232,6 +234,28 @@ export default function App() {
     }));
   }
 
+  function handleMarkDelivered(birthDetails) {
+    setUser(prev => ({
+      ...prev,
+      isDelivered: true,
+      birthDetails: birthDetails || prev?.birthDetails || {
+        birthDate: new Date().toISOString().split("T")[0],
+        birthTime: "08:30 AM",
+        birthWeight: "3.4 kg",
+        birthLength: "51 cm",
+        birthPhoto: "/images/bump.jpg",
+        note: "Welcome to the world, little angel!"
+      }
+    }));
+  }
+
+  function handleToggleKeepsakeMode(status) {
+    setUser(prev => ({
+      ...prev,
+      isDelivered: status
+    }));
+  }
+
   function addEvent(e) { setEvents(prev => [...prev, e]); }
   function addEntry(e) { setJournal(prev => [e, ...prev]); }
   
@@ -280,6 +304,8 @@ export default function App() {
     kickData
   };
 
+  const isDelivered = Boolean(user?.isDelivered);
+
   return (
     <ErrorBoundary>
       <div className="db-layout">
@@ -300,6 +326,8 @@ export default function App() {
                     kickData={kickData}
                     logKick={logKick}
                     resetKicks={resetKicks}
+                    onMarkDelivered={handleMarkDelivered}
+                    onToggleKeepsakeMode={handleToggleKeepsakeMode}
                   />
                 ) : (
                   <Navigate to="/login" replace />
@@ -310,7 +338,7 @@ export default function App() {
               path="/timeline"
               element={
                 user ? (
-                  <Timeline events={events} addEvent={addEvent} />
+                  <Timeline events={events} addEvent={addEvent} isDelivered={isDelivered} />
                 ) : (
                   <Navigate to="/login" replace />
                 )
@@ -320,7 +348,7 @@ export default function App() {
               path="/journal"
               element={
                 user ? (
-                  <Journal entries={journal} addEntry={addEntry} />
+                  <Journal entries={journal} addEntry={addEntry} isDelivered={isDelivered} />
                 ) : (
                   <Navigate to="/login" replace />
                 )
@@ -330,7 +358,7 @@ export default function App() {
               path="/gallery"
               element={
                 user ? (
-                  <Gallery photos={photos} addPhoto={addPhoto} togglePhotoFav={togglePhotoFav} />
+                  <Gallery photos={photos} addPhoto={addPhoto} togglePhotoFav={togglePhotoFav} isDelivered={isDelivered} />
                 ) : (
                   <Navigate to="/login" replace />
                 )
@@ -347,6 +375,7 @@ export default function App() {
                     addVisit={addVisit}
                     addWeight={addWeight}
                     updateVitals={updateVitals}
+                    isDelivered={isDelivered}
                   />
                 ) : (
                   <Navigate to="/login" replace />
@@ -357,7 +386,7 @@ export default function App() {
               path="/calendar"
               element={
                 user ? (
-                  <CalendarPage events={events} visits={visits} />
+                  <CalendarPage events={events} visits={visits} isDelivered={isDelivered} />
                 ) : (
                   <Navigate to="/login" replace />
                 )
@@ -367,7 +396,7 @@ export default function App() {
               path="/checklists"
               element={
                 user ? (
-                  <Checklists checklists={checklistsData} setChecklists={setChecklistsData} />
+                  <Checklists checklists={checklistsData} setChecklists={setChecklistsData} isDelivered={isDelivered} />
                 ) : (
                   <Navigate to="/login" replace />
                 )
@@ -377,7 +406,7 @@ export default function App() {
               path="/names"
               element={
                 user ? (
-                  <BabyNames />
+                  <BabyNames isDelivered={isDelivered} />
                 ) : (
                   <Navigate to="/login" replace />
                 )
@@ -392,6 +421,8 @@ export default function App() {
                     userDataBundle={currentUserDataBundle}
                     onUpdateProfile={handleUpdateProfile}
                     onLogout={handleLogout}
+                    onMarkDelivered={handleMarkDelivered}
+                    onToggleKeepsakeMode={handleToggleKeepsakeMode}
                   />
                 ) : (
                   <Navigate to="/login" replace />

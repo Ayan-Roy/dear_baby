@@ -30,7 +30,7 @@ export function evaluateBpStatus(bpStr) {
   return { label: "Normal 🟢", color: "#166534", bg: "#DCFCE7" };
 }
 
-export default function Medical({ weightData, visits, vitals, addVisit, addWeight, updateVitals }) {
+export default function Medical({ weightData, visits, vitals, addVisit, addWeight, updateVitals, isDelivered }) {
   const [showVisitForm, setShowVisitForm] = useState(false);
   const [showWeightForm, setShowWeightForm] = useState(false);
   const [showVitalsForm, setShowVitalsForm] = useState(false);
@@ -56,6 +56,7 @@ export default function Medical({ weightData, visits, vitals, addVisit, addWeigh
   });
 
   function handleVisitFilesChange(e) {
+    if (isDelivered) return;
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
 
@@ -79,6 +80,7 @@ export default function Medical({ weightData, visits, vitals, addVisit, addWeigh
   }
 
   function removeAttachment(id) {
+    if (isDelivered) return;
     setVisitDraft(d => ({
       ...d,
       attachments: (d.attachments || []).filter(a => a.id !== id)
@@ -87,7 +89,7 @@ export default function Medical({ weightData, visits, vitals, addVisit, addWeigh
 
   function handleVisitSubmit(e) {
     e.preventDefault();
-    if (!visitDraft.doctor || !visitDraft.date) return;
+    if (isDelivered || !visitDraft.doctor || !visitDraft.date) return;
     addVisit(visitDraft);
     if (visitDraft.bp) {
       updateVitals({ lastBp: visitDraft.bp });
@@ -104,7 +106,7 @@ export default function Medical({ weightData, visits, vitals, addVisit, addWeigh
 
   function handleWeightSubmit(e) {
     e.preventDefault();
-    if (!weightDraft.week || !weightDraft.kg) return;
+    if (isDelivered || !weightDraft.week || !weightDraft.kg) return;
     const wWeek = Number(weightDraft.week);
     const wKg = Number(weightDraft.kg);
     addWeight({
@@ -123,6 +125,7 @@ export default function Medical({ weightData, visits, vitals, addVisit, addWeigh
 
   function handleVitalsSubmit(e) {
     e.preventDefault();
+    if (isDelivered) return;
     updateVitals(vitalsDraft);
     setShowVitalsForm(false);
   }
@@ -145,17 +148,23 @@ export default function Medical({ weightData, visits, vitals, addVisit, addWeigh
           <h1 className="db-serif db-page-title">Medical & Health Log</h1>
           <p className="db-page-sub">Track your weight gain trajectory, blood pressure history, lab reports & prescriptions.</p>
         </div>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <button className="db-btn" onClick={() => { setShowWeightForm(s => !s); setShowVisitForm(false); setShowVitalsForm(false); }}>
-            {showWeightForm ? <X size={14} /> : <Plus size={14} />} {showWeightForm ? "Cancel" : "Log Weight & BP"}
-          </button>
-          <button className="db-btn" onClick={() => { setShowVitalsForm(s => !s); setShowVisitForm(false); setShowWeightForm(false); }}>
-            {showVitalsForm ? <X size={14} /> : <Edit3 size={14} />} {showVitalsForm ? "Cancel" : "Edit Vitals"}
-          </button>
-          <button className="db-btn primary" onClick={() => { setShowVisitForm(s => !s); setShowWeightForm(false); setShowVitalsForm(false); }}>
-            {showVisitForm ? <X size={14} /> : <Plus size={14} />} {showVisitForm ? "Cancel" : "Add Doctor Visit"}
-          </button>
-        </div>
+        {!isDelivered ? (
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button className="db-btn" onClick={() => { setShowWeightForm(s => !s); setShowVisitForm(false); setShowVitalsForm(false); }}>
+              {showWeightForm ? <X size={14} /> : <Plus size={14} />} {showWeightForm ? "Cancel" : "Log Weight & BP"}
+            </button>
+            <button className="db-btn" onClick={() => { setShowVitalsForm(s => !s); setShowVisitForm(false); setShowWeightForm(false); }}>
+              {showVitalsForm ? <X size={14} /> : <Edit3 size={14} />} {showVitalsForm ? "Cancel" : "Edit Vitals"}
+            </button>
+            <button className="db-btn primary" onClick={() => { setShowVisitForm(s => !s); setShowWeightForm(false); setShowWeightForm(false); }}>
+              {showVisitForm ? <X size={14} /> : <Plus size={14} />} {showVisitForm ? "Cancel" : "Add Doctor Visit"}
+            </button>
+          </div>
+        ) : (
+          <span style={{ fontSize: 12, fontWeight: 700, color: "#166534", background: "#DCFCE7", padding: "6px 14px", borderRadius: 99, display: "inline-flex", alignItems: "center", gap: 6 }}>
+            🔒 Medical Records & Prescriptions Preserved (Read-Only)
+          </span>
+        )}
       </div>
 
       {/* Log Weight & BP Form */}

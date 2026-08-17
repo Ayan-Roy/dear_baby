@@ -5,13 +5,13 @@ import { fmtDate } from "../utils.js";
 
 const EMOJI_PRESETS = ["💖", "😍", "🥰", "😄", "😭", "💛", "🎨", "🎵", "🌸", "✨"];
 
-export default function Timeline({ events, addEvent }) {
+export default function Timeline({ events, addEvent, isDelivered }) {
   const [filter, setFilter] = useState("All");
   const [search, setSearch] = useState("");
   const todayStr = new Date().toISOString().split("T")[0];
   const hasEntryToday = events.some(e => e.date === todayStr);
 
-  const [showForm, setShowForm] = useState(() => !hasEntryToday);
+  const [showForm, setShowForm] = useState(() => !hasEntryToday && !isDelivered);
   const [draft, setDraft] = useState({
     title: "",
     date: todayStr,
@@ -36,7 +36,7 @@ export default function Timeline({ events, addEvent }) {
 
   function submit(e) {
     e.preventDefault();
-    if (!draft.title.trim() || !draft.date) return;
+    if (isDelivered || !draft.title.trim() || !draft.date) return;
 
     addEvent({
       ...draft,
@@ -49,7 +49,7 @@ export default function Timeline({ events, addEvent }) {
       date: new Date().toISOString().split("T")[0],
       cat: "Milestone",
       note: "",
-      mood: "🥹",
+      mood: "💖",
       gold: false
     });
     setShowForm(false);
@@ -62,14 +62,20 @@ export default function Timeline({ events, addEvent }) {
           <h1 className="db-serif db-page-title">Pregnancy Timeline</h1>
           <p className="db-page-sub">Every milestone moment, captured forever in chronological ribbon order.</p>
         </div>
-        <button className="db-btn rose" onClick={() => setShowForm(s => !s)}>
-          {showForm ? <X size={15} /> : <Plus size={15} />}
-          {showForm ? "Close Form" : (!hasEntryToday ? "✨ Log Today's Milestone" : "Add Milestone Memory")}
-        </button>
+        {!isDelivered ? (
+          <button className="db-btn rose" onClick={() => setShowForm(s => !s)}>
+            {showForm ? <X size={15} /> : <Plus size={15} />}
+            {showForm ? "Close Form" : (!hasEntryToday ? "✨ Log Today's Milestone" : "Add Milestone Memory")}
+          </button>
+        ) : (
+          <span style={{ fontSize: 12, fontWeight: 700, color: "#166534", background: "#DCFCE7", padding: "6px 14px", borderRadius: 99, display: "inline-flex", alignItems: "center", gap: 6 }}>
+            🔒 Milestone Timeline Preserved (Read-Only)
+          </span>
+        )}
       </div>
 
       {/* Add Memory Form Card */}
-      {showForm && (
+      {showForm && !isDelivered && (
         <form onSubmit={submit} className="db-card" style={{ marginBottom: 24, border: "2px solid var(--rose)" }}>
           <div className="db-label" style={{ marginBottom: 12, color: "var(--rose)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <span>{!hasEntryToday ? "🌸 Today's Milestone — Write a memory for today" : "New Milestone Entry"}</span>
